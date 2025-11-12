@@ -1,0 +1,105 @@
+services:
+  pyspark-app:
+    build:
+      context: ./pyspark_build
+    container_name: pyspark-app
+    depends_on: [kafka, connect]
+    volumes:
+      - ./apps:/opt/spark/apps
+      - ./bucket:/opt/spark/bucket
+      - ./raw_data:/opt/spark/raw_data
+    command: tail -f /dev/null
+    environment:
+      - PATH=/opt/spark/bin:/opt/spark/sbin:$PATH
+    networks:
+      - spark-kafka-net
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    networks:
+      - spark-kafka-net
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    networks:
+      - spark-kafka-net
+
+  postgres:
+    image: debezium/postgres:17-alpine
+    container_name: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=claims_db
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=admin
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./db_setup.sql:/docker-entrypoint-initdb.d/init.sql
+    command: postgres -c wal_level=logical # Enables CDC (Logical Replication)
+    networks:
+      - spark-kafka-net
+
+  connect:
+    image: debezium/connect:2.7.3.Final
+    container_name: connect
+    ports:
+      - "8083:8083"
+    depends_on:
+      - kafka
+      - postgres
+    environment:
+      BOOTSTRAP_SERVERS: kafka:9092
+      GROUP_ID: 1
+      CONFIG_STORAGE_TOPIC: my_connect_configs
+      OFFSET_STORAGE_TOPIC: my_connect_offsets
+      STATUS_STORAGE_TOPIC: my_connect_statuses
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: claims_db
+    networks:
+      - spark-kafka-net
+  
+  jupyter-lab:
+    image: jupyter/pyspark-notebook:spark-3.4.0
+    container_name: jupyter-lab
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./apps:/home/jovyan/work/apps
+      - ./bucket:/home/jovyan/work/bucket
+      - ./notebooks:/home/jovyan/work/notebooks
+      - ./raw_data:/home/jovyan/work/raw_data
+    environment:
+      # Set a token for security and grant sudo access if needed
+      - JUPYTER_TOKEN=claims-dev
+      - GRANT_SUDO=yes
+    networks:
+      - spark-kafka-net
+
+networks:
+  spark-kafka-net:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  notebooks:

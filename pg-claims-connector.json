@@ -1,0 +1,19 @@
+{
+  "name": "claims-connector",
+  "config": {
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+    "database.hostname": "postgres",
+    "database.port": "5432",
+    "database.user": "admin",
+    "database.password": "admin",
+    "database.dbname": "claims_db",
+    "topic.prefix": "pg-claims-server",
+    "schema.include.list": "demo",
+    "table.include.list": "demo.policy,demo.claim,demo.customer",
+    "plugin.name": "pgoutput",
+    "publication.name": "dbz_publication",
+    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "value.converter.schemas.enable": "false",
+    "decimal.handling.mode": "string"
+  }
+}
