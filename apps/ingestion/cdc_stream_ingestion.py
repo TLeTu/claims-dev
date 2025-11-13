@@ -1,7 +1,7 @@
 import os
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import from_json, col, when, lit
-from pyspark.sql.types import StructType, StructField, StringType, IntegerType, DecimalType, DateType, BooleanType, LongType
+from pyspark.sql.functions import from_json, col, when
+from pyspark.sql.types import StructType, StructField, StringType, LongType
 from delta.tables import DeltaTable
 
 # --- Configuration ---
