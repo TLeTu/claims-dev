@@ -3,3 +3,4 @@ pandas
 pyarrow
 delta-spark
 psycopg2-binary
+geopy
