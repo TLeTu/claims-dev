@@ -9,43 +9,41 @@ from delta.tables import DeltaTable
 # =============================================================================
 
 # --- Base Paths ---
-BRONZE_DB_BASE_PATH = "/opt/spark/bucket/bronze/database"
-BRONZE_OBJECTS_BASE_PATH = "/opt/spark/bucket/bronze/objects"
-BRONZE_TELEMATICS_BASE_PATH = "/opt/spark/bucket/bronze"
-SILVER_BASE_PATH = "/opt/spark/bucket/silver"
+BRONZE_BASE_PATH = "s3a://car-smart-claims/bronze"
+SILVER_BASE_PATH = "s3a://car-smart-claims/silver"
 
 # --- Policy Table Paths ---
-POLICY_BRONZE_PATH = os.path.join(BRONZE_DB_BASE_PATH, "policy")
+POLICY_BRONZE_PATH = os.path.join(BRONZE_BASE_PATH, "database/policy")
 POLICY_SILVER_PATH = os.path.join(SILVER_BASE_PATH, "policy")
 POLICY_CHECKPOINT = os.path.join(POLICY_SILVER_PATH, "_checkpoints")
 
 # --- Claim Table Paths ---
-CLAIM_BRONZE_PATH = os.path.join(BRONZE_DB_BASE_PATH, "claim")
+CLAIM_BRONZE_PATH = os.path.join(BRONZE_BASE_PATH, "database/claim")
 CLAIM_SILVER_PATH = os.path.join(SILVER_BASE_PATH, "claim")
 CLAIM_CHECKPOINT = os.path.join(CLAIM_SILVER_PATH, "_checkpoints")
 
 # --- Customer Table Paths ---
-CUSTOMER_BRONZE_PATH = os.path.join(BRONZE_DB_BASE_PATH, "customer")
+CUSTOMER_BRONZE_PATH = os.path.join(BRONZE_BASE_PATH, "database/customer")
 CUSTOMER_SILVER_PATH = os.path.join(SILVER_BASE_PATH, "customer")
 CUSTOMER_CHECKPOINT = os.path.join(CUSTOMER_SILVER_PATH, "_checkpoints")
 
 # --- Claim Images Table Paths ---
-CLAIM_IMAGES_BRONZE_PATH = os.path.join(BRONZE_OBJECTS_BASE_PATH, "claim_images")
+CLAIM_IMAGES_BRONZE_PATH = os.path.join(BRONZE_BASE_PATH, "claim_images")
 CLAIM_IMAGES_SILVER_PATH = os.path.join(SILVER_BASE_PATH, "claim_images")
 CLAIM_IMAGES_CHECKPOINT = os.path.join(CLAIM_IMAGES_SILVER_PATH, "_checkpoints")
 
 # --- Image Metadata Table Paths ---
-IMAGE_METADATA_BRONZE_PATH = os.path.join(BRONZE_OBJECTS_BASE_PATH, "image_metadata")
+IMAGE_METADATA_BRONZE_PATH = os.path.join(BRONZE_BASE_PATH, "image_metadata")
 IMAGE_METADATA_SILVER_PATH = os.path.join(SILVER_BASE_PATH, "image_metadata")
 IMAGE_METADATA_CHECKPOINT = os.path.join(IMAGE_METADATA_SILVER_PATH, "_checkpoints")
 
 # --- Training Images Table Paths ---
-TRAINING_IMAGES_BRONZE_PATH = os.path.join(BRONZE_OBJECTS_BASE_PATH, "training_images")
+TRAINING_IMAGES_BRONZE_PATH = os.path.join(BRONZE_BASE_PATH, "training_images")
 TRAINING_IMAGES_SILVER_PATH = os.path.join(SILVER_BASE_PATH, "training_images")
 TRAINING_IMAGES_CHECKPOINT = os.path.join(TRAINING_IMAGES_SILVER_PATH, "_checkpoints")
 
 # --- Telematics Table Paths ---
-TELEMATICS_BRONZE_PATH = os.path.join(BRONZE_TELEMATICS_BASE_PATH, "telematics")
+TELEMATICS_BRONZE_PATH = os.path.join(BRONZE_BASE_PATH, "telematics")
 TELEMATICS_SILVER_PATH = os.path.join(SILVER_BASE_PATH, "telematics")
 TELEMATICS_CHECKPOINT = os.path.join(TELEMATICS_SILVER_PATH, "_checkpoints")
 
@@ -352,6 +350,7 @@ if __name__ == "__main__":
         .appName("Bronze_to_Silver_Unified_Transformation") \
         .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension") \
         .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog") \
+        .config("spark.hadoop.fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem") \
         .getOrCreate()
 
     print("Spark session created. Starting all Bronze-to-Silver streams...")

@@ -7,7 +7,7 @@ from delta.tables import DeltaTable
 # --- Configuration ---
 KAFKA_BOOTSTRAP_SERVERS = "kafka:9092"
 CDC_TOPIC_PATTERN = "pg-claims-server.demo.*"
-BASE_DELTA_PATH = "/opt/spark/bucket/bronze/database"
+BASE_DELTA_PATH = "s3a://car-smart-claims/bronze/database"
 
 # =============================================================================
 # --- 1. DEFINE SCHEMAS FOR EACH TABLE ---
@@ -225,6 +225,7 @@ if __name__ == "__main__":
         .appName("DeltaClaimsIngestion") \
         .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension") \
         .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog") \
+        .config("spark.hadoop.fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem") \
         .getOrCreate()
         
     # Set log level to WARN to reduce verbosity

@@ -12,8 +12,8 @@ from pyspark.sql.functions import col, pandas_udf, avg
 # =============================================================================
 
 # --- Base Paths ---
-SILVER_BASE_PATH = "/opt/spark/bucket/silver"
-GOLD_BASE_PATH = "/opt/spark/bucket/gold"
+SILVER_BASE_PATH = "s3a://car-smart-claims/silver"
+GOLD_BASE_PATH = "s3a://car-smart-claims/gold"
 
 # --- Silver Table Paths ---
 POLICY_SILVER_PATH = os.path.join(SILVER_BASE_PATH, "policy")
@@ -153,6 +153,7 @@ if __name__ == "__main__":
         .appName("Silver_to_Gold_Transformation") \
         .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension") \
         .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog") \
+        .config("spark.hadoop.fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem") \
         .getOrCreate()
 
     print("Spark session created. Starting Silver-to-Gold transformations...")

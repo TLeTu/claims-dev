@@ -10,9 +10,9 @@ TELEMATICS_TOPIC = "telematics_topic"
 
 # Delta Lake Configuration
 # These paths are inside the container. Consider using volumes for persistence.
-BASE_S3_PATH = "/opt/spark/bucket" # Using a local path to simulate S3
+BASE_S3_PATH = "s3a://car-smart-claims"
 TELEMATICS_BRONZE_PATH = os.path.join(BASE_S3_PATH, "bronze/telematics")
-TELEMATICS_CHECKPOINT = os.path.join(BASE_S3_PATH, "bronze/telematics/_checkpoint")
+TELEMATICS_CHECKPOINT = os.path.join(TELEMATICS_BRONZE_PATH, "_checkpoint")
 
 
 def ingest_telematics(spark: SparkSession):
@@ -60,6 +60,7 @@ if __name__ == "__main__":
         .appName("DeltaTelematicsIngestion") \
         .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension") \
         .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog") \
+        .config("spark.hadoop.fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem") \
         .getOrCreate()
 
     ingest_telematics(spark)

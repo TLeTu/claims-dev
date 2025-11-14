@@ -6,8 +6,8 @@ from pyspark.sql.types import StructType, StructField, StringType, TimestampType
 
 # --- Configuration ---
 # Using a local path to simulate a cloud S3/ADLS/GCS path, following the pattern in your scripts
-BASE_S3_PATH = "/opt/spark/bucket"
-RAW_DATA_PATH = "/opt/spark/raw_data"
+BASE_S3_PATH = "s3a://car-smart-claims"
+RAW_DATA_PATH = "s3a://car-smart-claims/landing"
 
 # == Source Paths (where new files will be dropped) ==
 CLAIM_IMAGES_SOURCE_PATH = os.path.join(RAW_DATA_PATH, "claims/images")
@@ -15,14 +15,14 @@ METADATA_SOURCE_PATH = os.path.join(RAW_DATA_PATH, "claims/metadata")
 TRAINING_IMAGES_SOURCE_PATH = os.path.join(RAW_DATA_PATH, "training_imgs")
 
 # == Sink & Checkpoint Paths (where Delta tables will be written) ==
-CLAIM_IMAGES_BRONZE_PATH = os.path.join(BASE_S3_PATH, "bronze/objects/claim_images")
-CLAIM_IMAGES_CHECKPOINT = os.path.join(BASE_S3_PATH, "bronze/objects/claim_images/_checkpoints")
+CLAIM_IMAGES_BRONZE_PATH = os.path.join(BASE_S3_PATH, "bronze/claim_images")
+CLAIM_IMAGES_CHECKPOINT = os.path.join(BASE_S3_PATH, "bronze/claim_images/_checkpoints")
 
-METADATA_BRONZE_PATH = os.path.join(BASE_S3_PATH, "bronze/objects/image_metadata")
-METADATA_CHECKPOINT = os.path.join(BASE_S3_PATH, "bronze/objects/image_metadata/_checkpoints")
+METADATA_BRONZE_PATH = os.path.join(BASE_S3_PATH, "bronze/image_metadata")
+METADATA_CHECKPOINT = os.path.join(BASE_S3_PATH, "bronze/image_metadata/_checkpoints")
 
-TRAINING_IMAGES_BRONZE_PATH = os.path.join(BASE_S3_PATH, "bronze/objects/training_images")
-TRAINING_IMAGES_CHECKPOINT = os.path.join(BASE_S3_PATH, "bronze/objects/training_images/_checkpoints")
+TRAINING_IMAGES_BRONZE_PATH = os.path.join(BASE_S3_PATH, "bronze/training_images")
+TRAINING_IMAGES_CHECKPOINT = os.path.join(BASE_S3_PATH, "bronze/training_images/_checkpoints")
 
 # Schema for the image_metadata.csv file
 METADATA_SCHEMA = StructType([
@@ -142,6 +142,7 @@ if __name__ == "__main__":
         .appName("DeltaObjectsIngestion")
         .config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
         .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.delta.catalog.DeltaCatalog")
+        .config("spark.hadoop.fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem")
         .getOrCreate()
     )
     

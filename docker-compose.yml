@@ -3,6 +3,8 @@ services:
     build:
       context: ./pyspark_build
     container_name: pyspark-app
+    env_file:
+      - ./.env # This tells Docker Compose to load environment variables from the .env file
     depends_on: [kafka, connect]
     volumes:
       - ./apps:/opt/spark/apps
@@ -80,7 +82,8 @@ services:
       - spark-kafka-net
   
   jupyter-lab:
-    image: jupyter/pyspark-notebook:spark-3.4.0
+    build:
+      context: ./notebooks
     container_name: jupyter-lab
     ports:
       - "8888:8888"
@@ -93,6 +96,24 @@ services:
       # Set a token for security and grant sudo access if needed
       - JUPYTER_TOKEN=claims-dev
       - GRANT_SUDO=yes
+    env_file:
+      - ./.env # This tells Docker Compose to load environment variables from the .env file
+    networks:
+      - spark-kafka-net
+
+  trino:
+    image: trinodb/trino:latest
+    container_name: trino
+    user: "root"
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./trino_config:/etc/trino
+    environment:
+      # Pass the credentials from the .env file to the container
+      - AWS_REGION=${AWS_REGION}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
     networks:
       - spark-kafka-net
 
