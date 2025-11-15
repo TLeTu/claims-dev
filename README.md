@@ -44,3 +44,9 @@ This architecture is designed to solve several common challenges in data enginee
 *   **Data Auditing and Historical Analysis:** Delta Lake's "time travel" feature versions the data with every change. This allows you to query the state of a claim or policy at any point in time, which is invaluable for auditing, debugging data pipelines, and reproducing historical reports.
 
 *   **Scalable and Future-Proof Data Platform:** The use of cloud-native, distributed components (Kafka, Spark, S3, Trino) ensures the platform can scale to handle growing data volumes and evolving business requirements, such as adding new data sources or more complex analytical models.
+
+### Sample Dashboard
+
+The data processed by the platform can be easily visualized in Metabase to create insightful dashboards for business users. Here is an example:
+![Dashboard 1](dashboard1.png)
+![Dashboard 2](dashboard2.png)
