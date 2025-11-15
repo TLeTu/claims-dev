@@ -115,12 +115,29 @@ services:
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
     networks:
-      - spark-kafka-net
+      - trino-net
+
+  metabase:
+      image: metabase/metabase:v0.56.14.x
+      container_name: metabase
+      ports:
+        - "3000:3000"
+      volumes: # Mount the plugins directory for the Trino driver
+        - ./metabase-plugins:/app/plugins
+        - metabase-data:/metabase-data
+      networks:
+        - trino-net  # Add this line
+      depends_on:
+        - trino # Tells Metabase to wait for Trino
 
 networks:
   spark-kafka-net:
     driver: bridge
+  trino-net:
+    driver: bridge
+
 
 volumes:
   postgres-data:
   notebooks:
+  metabase-data:
