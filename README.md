@@ -4,7 +4,7 @@
 
 This project sets up a complete, containerized data engineering environment for processing claims data. It leverages a modern data stack, including Change Data Capture (CDC), real-time stream processing, a data lakehouse, and a powerful query engine.
 
-The architecture is designed to capture data changes from a transactional PostgreSQL database, process them in real-time using Spark, store them in a Delta Lake table on an S3-compatible object store, and make them available for analytics through Trino and Metabase.
+The architecture is designed to capture data changes from a transactional PostgreSQL database, process them in real-time using Spark, store them in a Delta Lake table in an AWS S3 bucket, and make them available for analytics through Trino and Metabase.
 
 ### Architecture
 
@@ -20,7 +20,7 @@ The platform is composed of several services orchestrated by Docker Compose:
     *   **JupyterLab (`jupyter-lab`):** An interactive development environment for creating and testing PySpark applications and notebooks.
 
 3.  **Data Lakehouse & Querying:**
-    *   **Local S3 (`./bucket`):** The `docker-compose.yml` maps a local directory to act as an S3-compatible bucket. This is where the processed data, in Delta Lake format, is stored.
+    *   **AWS S3:** The data lakehouse storage layer. Processed data is stored in Delta Lake format in a designated S3 bucket, making it scalable and durable.
     *   **Trino (`trino`):** A high-performance, distributed SQL query engine. It is configured with a Delta Lake connector to query the data stored in the S3 bucket directly. It uses AWS Glue as its metastore to manage table schemas.
     *   **Metabase (`metabase`):** A user-friendly business intelligence and visualization tool. It connects to Trino, allowing for easy exploration, dashboarding, and analysis of the claims data in the Delta Lake.
 
