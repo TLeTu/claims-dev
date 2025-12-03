@@ -24,7 +24,14 @@ The platform is composed of several services orchestrated by Docker Compose:
     *   **PySpark (`pyspark-app`):** A Spark environment for running data processing jobs. It consumes data from all ingestion streams (Kafka, files), performs transformations, and writes the results to the data lake.
     *   **JupyterLab (`jupyter-lab`):** An interactive development environment for creating and testing PySpark applications and notebooks.
 
-3.  **Data Lakehouse & Querying:**
+3.  **Machine Learning & Experiment Tracking:**
+    *   **Model Training (`train_model.py`):** A PyTorch-based script that trains a computer vision model (e.g., for car damage classification) using the processed data from the Delta Lake.
+    *   **MLflow (`mlflow`):** An open-source platform for managing the end-to-end machine learning lifecycle. It is used in this project to:
+        *   **Track Experiments:** The `train_model.py` script connects to the MLflow server to log hyperparameters, performance metrics (like loss and accuracy), and other artifacts for each training run.
+        *   **Manage Models:** The trained model is saved to the MLflow Model Registry, providing versioning and making it easy to deploy for inference later.
+        *   The MLflow server uses the PostgreSQL database for backend storage and S3 for artifact storage.
+
+4.  **Data Lakehouse & Querying:**
     *   **AWS S3:** The data lakehouse storage layer. Processed data is stored in Delta Lake format in a designated S3 bucket, making it scalable and durable.
     *   **Trino (`trino`):** A high-performance, distributed SQL query engine. It is configured with a Delta Lake connector to query the data stored in the S3 bucket directly. It uses AWS Glue as its metastore to manage table schemas.
     *   **Metabase (`metabase`):** A user-friendly business intelligence and visualization tool. It connects to Trino, allowing for easy exploration, dashboarding, and analysis of the claims data in the Delta Lake.
