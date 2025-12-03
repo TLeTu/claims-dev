@@ -13,6 +13,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader, random_split
 from torchvision import models, transforms
+from mlflow.models.signature import infer_signature
 from sklearn.model_selection import train_test_split
 
 from pyspark.sql import SparkSession
@@ -136,15 +137,22 @@ def main(args):
 
         # --- Prepare the model ---
         logging.info(f"Loading pre-trained {args.base_model} model...")
-        model = models.efficientnet_b0(weights='EfficientNet_B0_Weights.DEFAULT')
+        # Dynamically load the specified base model
+        if args.base_model.lower() == 'efficientnet_b0':
+            model = models.efficientnet_b0(weights='EfficientNet_B0_Weights.DEFAULT')
+            # Replace the classifier
+            in_features = model.classifier[1].in_features
+            model.classifier[1] = nn.Linear(in_features, num_classes)
+        else:
+            # Example for another model, can be expanded
+            # For resnet, the classifier layer is named 'fc'
+            model = models.resnet50(weights='ResNet50_Weights.DEFAULT')
+            in_features = model.fc.in_features
+            model.fc = nn.Linear(in_features, num_classes)
 
         # Freeze all the parameters in the feature extractor
         for param in model.parameters():
             param.requires_grad = False
-
-        # Replace the classifier
-        in_features = model.classifier[1].in_features
-        model.classifier[1] = nn.Linear(in_features, num_classes)
         
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         model = model.to(device)
@@ -152,7 +160,7 @@ def main(args):
 
         # --- Define loss function and optimizer ---
         criterion = nn.CrossEntropyLoss()
-        optimizer = optim.Adam(model.classifier.parameters(), lr=args.learning_rate)
+        optimizer = optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=args.learning_rate)
 
         # --- Training loop ---
         logging.info("Starting model training loop...")
@@ -191,12 +199,17 @@ def main(args):
         logging.info("Logging the final model to MLflow...")
         
         # Get a sample input batch to define the model signature
-        input_example, _ = next(iter(train_loader))
+        input_example, _ = next(iter(val_loader))
+        # Infer signature from a single input example and model output
+        model.eval()
+        with torch.no_grad():
+            output_example = model(input_example.to(device))
+        signature = infer_signature(input_example.numpy(), output_example.cpu().numpy())
 
         mlflow.pytorch.log_model(
             pytorch_model=model,
-            name="damage-classifier-model",
-            input_example=input_example.numpy(),
+            artifact_path="damage-classifier-model",
+            signature=signature
         )
         logging.info("Model successfully logged with signature.")
 
@@ -218,7 +231,7 @@ if __name__ == "__main__":
     parser.add_argument("--silver_data_path", type=str, default="s3a://car-smart-claims/silver/training_images", help="Path to the silver training images delta table.")
     
     # --- Hyperparameter Arguments ---
-    parser.add_argument("--base_model", type=str, default="EfficientNetB0", help="Base model architecture.")
+    parser.add_argument("--base_model", type=str, default="efficientnet_b0", help="Base model architecture (e.g., 'efficientnet_b0').")
     parser.add_argument("--epochs", type=int, default=5, help="Number of training epochs.")
     parser.add_argument("--learning_rate", type=float, default=0.001, help="Learning rate for the optimizer.")
     parser.add_argument("--batch_size", type=int, default=32, help="Batch size for training and validation.")
