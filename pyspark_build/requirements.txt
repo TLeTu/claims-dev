@@ -5,3 +5,8 @@ delta-spark
 psycopg2-binary
 boto3 # For AWS S3 interactions from Python
 geopy
+mlflow
+torch
+torchvision
+Pillow
+scikit-learn

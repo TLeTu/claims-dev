@@ -58,6 +58,11 @@ services:
       - postgres-data:/var/lib/postgresql/data
       - ./db_setup.sql:/docker-entrypoint-initdb.d/init.sql
     command: postgres -c wal_level=logical # Enables CDC (Logical Replication)
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d claims_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     networks:
       - spark-kafka-net
 
@@ -81,6 +86,27 @@ services:
     networks:
       - spark-kafka-net
   
+  mlflow:
+    build:
+      context: ./mlflow_build
+    container_name: mlflow-server
+    ports:
+      - "5001:5001" # Expose MLflow on port 5001 to avoid conflict with Metabase
+    env_file:
+      - ./.env
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=admin
+      - POSTGRES_DB=mlflow_db
+      - AWS_REGION=${AWS_REGION}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - spark-kafka-net
+
   jupyter-lab:
     build:
       context: ./notebooks
@@ -115,7 +141,7 @@ services:
       - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
     networks:
-      - trino-net
+      - spark-kafka-net
 
   metabase:
       image: metabase/metabase:v0.56.14.x
@@ -126,18 +152,16 @@ services:
         - ./metabase-plugins:/app/plugins
         - metabase-data:/metabase-data
       networks:
-        - trino-net  # Add this line
+        - spark-kafka-net
       depends_on:
         - trino # Tells Metabase to wait for Trino
 
 networks:
   spark-kafka-net:
     driver: bridge
-  trino-net:
-    driver: bridge
-
 
 volumes:
   postgres-data:
   notebooks:
   metabase-data:
+  mlflow-data:
