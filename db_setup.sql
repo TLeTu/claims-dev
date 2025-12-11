@@ -53,4 +53,22 @@ CREATE TABLE IF NOT EXISTS demo.customer (
     name VARCHAR(255) NULL
 );
 
+CREATE TABLE IF NOT EXISTS demo.user (
+    user_id SERIAL PRIMARY KEY,
+    password_hash VARCHAR(255) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    phone_number VARCHAR(15) UNIQUE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE PUBLICATION dbz_publication FOR TABLE demo.policy, demo.claim, demo.customer;
+
+-- 1. Add the column
+ALTER TABLE demo.user 
+ADD COLUMN customer_id INT;
+
+-- 2. Add the foreign key constraint
+ALTER TABLE demo.user
+ADD CONSTRAINT fk_user_customer
+FOREIGN KEY (customer_id) 
+REFERENCES demo.customer(customer_id);

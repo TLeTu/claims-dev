@@ -57,6 +57,7 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./db_setup.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./raw_data:/raw_data
     command: postgres -c wal_level=logical # Enables CDC (Logical Replication)
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U admin -d claims_db"]
@@ -155,6 +156,19 @@ services:
         - spark-kafka-net
       depends_on:
         - trino # Tells Metabase to wait for Trino
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - spark-kafka-net
 
 networks:
   spark-kafka-net:
