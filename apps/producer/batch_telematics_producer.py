@@ -2,36 +2,25 @@ import os
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, to_json, struct
 
-# --- CONFIGURATION ---
+# --- Configuration ---
+APP_NAME = "Producer_Telematics_Batch"
 KAFKA_BROKER = "kafka:9092"
 KAFKA_TOPIC = "telematics_topic"
-PARQUET_FILE_PATH = "/opt/spark/raw_data/telematics/"
-# ---------------------
+SOURCE_PATH = "/opt/spark/raw_data/telematics/"
 
 def produce_telematics_batch(spark: SparkSession):
-    """
-    Reads all telematics data from Parquet files in a directory,
-    and writes it as a batch to a Kafka topic.
-    """
-    print(f"Reading all Parquet files from: {PARQUET_FILE_PATH}")
+    print(f"Reading Parquet source: {SOURCE_PATH}")
 
     try:
-        # Read all parquet files in the directory into a DataFrame.
-        # Spark handles the parallel reading automatically.
-        df = spark.read.parquet(PARQUET_FILE_PATH)
+        df = spark.read.parquet(SOURCE_PATH)
     except Exception as e:
-        # This can happen if the directory is empty or doesn't exist.
-        print(f"Error reading Parquet files: {e}")
-        print("Please ensure the directory exists and contains .parquet files.")
+        print(f"Error reading source: {e}")
         return
 
-    # Get a list of all columns to be included in the JSON value
-    value_columns = [c for c in df.columns]
-
-    # 1. Cast all columns to String to match the consumer's schema.
-    # 2. Use 'chassis_no' as the Kafka message key for partitioning.
-    # 3. Create a 'value' column by packing all columns into a JSON string.
-    #    This is what the Kafka sink expects.
+    # Prepare DataFrame for Kafka (Key/Value pairs)
+    # We cast all fields to string to ensure JSON compatibility in the value payload
+    value_columns = df.columns
+    
     kafka_df = df.select(
         [col(c).cast("string") for c in df.columns]
     ).withColumn(
@@ -40,11 +29,11 @@ def produce_telematics_batch(spark: SparkSession):
         "value", to_json(struct(*value_columns))
     )
 
-    print(f"Writing {kafka_df.count()} records to Kafka topic '{KAFKA_TOPIC}'...")
+    record_count = kafka_df.count()
+    print(f"Producing {record_count} records to topic '{KAFKA_TOPIC}'...")
 
-    # Write the DataFrame to Kafka
     (
-        kafka_df.select("key", "value") # Select only the key and value for the sink
+        kafka_df.select("key", "value")
         .write
         .format("kafka")
         .option("kafka.bootstrap.servers", KAFKA_BROKER)
@@ -52,12 +41,14 @@ def produce_telematics_batch(spark: SparkSession):
         .save()
     )
 
-    print("Successfully wrote batch to Kafka.")
+    print("Batch production complete.")
 
 if __name__ == "__main__":
-    spark = SparkSession.builder \
-        .appName("BatchTelematicsProducer") \
+    spark = (
+        SparkSession.builder
+        .appName(APP_NAME)
         .getOrCreate()
+    )
 
     produce_telematics_batch(spark)
     spark.stop()

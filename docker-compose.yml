@@ -170,6 +170,31 @@ services:
     networks:
       - spark-kafka-net
 
+  airflow:
+    image: apache/airflow:3.0.0
+    container_name: airflow
+    ports:
+      - "8081:8080"
+    environment:
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://admin:admin@postgres:5432/airflow
+      AIRFLOW_UID: 1000 
+    env_file:
+      - ./.env
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./airflow/dags:/opt/airflow/dags
+    group_add:
+      - 961  # docker group
+    privileged: true
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: >
+      bash -c "airflow db migrate && airflow standalone"
+    restart: unless-stopped
+    networks:
+      - spark-kafka-net
+
 networks:
   spark-kafka-net:
     driver: bridge
